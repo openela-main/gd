@@ -1,0 +1,120 @@
+From 5b026e3cc05d7041cbe47a8702f1b51ffbf0a99b Mon Sep 17 00:00:00 2001
+From: Ondrej Dubaj <odubaj@redhat.com>
+Date: Thu, 5 Mar 2020 11:02:27 +0100
+Subject: [PATCH] Imagecolormatch Out Of Bounds Write on Heap
+
+At least some of the image reading functions may return images which
+use color indexes greater than or equal to im->colorsTotal.  We cater
+to this by always using a buffer size which is sufficient for
+`gdMaxColors` in `gdImageColorMatch()`.
+
+Resolves: #1678104
+Version: 2.2.5-7
+---
+ src/gd_color_match.c                    |  4 ++--
+ tests/CMakeLists.txt                    |  1 +
+ tests/Makefile.am                       |  1 +
+ tests/gdimagecolormatch/CMakeLists.txt  |  5 +++++
+ tests/gdimagecolormatch/Makemodule.am   |  5 +++++
+ tests/gdimagecolormatch/cve_2019_6977.c | 25 +++++++++++++++++++++++++
+ 6 files changed, 39 insertions(+), 2 deletions(-)
+ create mode 100644 tests/gdimagecolormatch/CMakeLists.txt
+ create mode 100644 tests/gdimagecolormatch/Makemodule.am
+ create mode 100644 tests/gdimagecolormatch/cve_2019_6977.c
+
+diff --git a/src/gd_color_match.c b/src/gd_color_match.c
+index f0842b6..a94a841 100755
+--- a/src/gd_color_match.c
++++ b/src/gd_color_match.c
+@@ -31,8 +31,8 @@ BGD_DECLARE(int) gdImageColorMatch (gdImagePtr im1, gdImagePtr im2)
+ 		return -4; /* At least 1 color must be allocated */
+ 	}
+ 
+-	buf = (unsigned long *)gdMalloc(sizeof(unsigned long) * 5 * im2->colorsTotal);
+-	memset (buf, 0, sizeof(unsigned long) * 5 * im2->colorsTotal );
++	buf = (unsigned long *)gdMalloc(sizeof(unsigned long) * 5 * gdMaxColors);
++	memset (buf, 0, sizeof(unsigned long) * 5 * gdMaxColors );
+ 
+ 	for (x=0; x < im1->sx; x++) {
+ 		for( y=0; y<im1->sy; y++ ) {
+diff --git a/tests/CMakeLists.txt b/tests/CMakeLists.txt
+index 7eef4bf..6979416 100755
+--- a/tests/CMakeLists.txt
++++ b/tests/CMakeLists.txt
+@@ -31,6 +31,7 @@ if (BUILD_TEST)
+ 		gdimagecolordeallocate
+ 		gdimagecolorexact
+ 		gdimagecolorreplace
++		gdimagecolormatch
+ 		gdimagecolorresolve
+ 		gdimagecolortransparent
+ 		gdimagecontrast
+diff --git a/tests/Makefile.am b/tests/Makefile.am
+index 5f8b624..1a44112 100755
+--- a/tests/Makefile.am
++++ b/tests/Makefile.am
+@@ -26,6 +26,7 @@ include gdimagecolorclosest/Makemodule.am
+ include gdimagecolordeallocate/Makemodule.am
+ include gdimagecolorexact/Makemodule.am
+ include gdimagecolorreplace/Makemodule.am
++include gdimagecolormatch/Makemodule.am
+ include gdimagecolorresolve/Makemodule.am
+ include gdimagecolortransparent/Makemodule.am
+ include gdimagecontrast/Makemodule.am
+diff --git a/tests/gdimagecolormatch/CMakeLists.txt b/tests/gdimagecolormatch/CMakeLists.txt
+new file mode 100644
+index 0000000..591938f
+--- /dev/null
++++ b/tests/gdimagecolormatch/CMakeLists.txt
+@@ -0,0 +1,5 @@
++LIST(APPEND TESTS_FILES
++	cve_2019_6977
++)
++
++ADD_GD_TESTS()
+diff --git a/tests/gdimagecolormatch/Makemodule.am b/tests/gdimagecolormatch/Makemodule.am
+new file mode 100644
+index 0000000..e8e09a9
+--- /dev/null
++++ b/tests/gdimagecolormatch/Makemodule.am
+@@ -0,0 +1,5 @@
++libgd_test_programs += \
++	gdimagecolormatch/cve_2019_6977
++
++EXTRA_DIST += \
++	gdimagecolormatch/CMakeLists.txt
+diff --git a/tests/gdimagecolormatch/cve_2019_6977.c b/tests/gdimagecolormatch/cve_2019_6977.c
+new file mode 100644
+index 0000000..fdd7af5
+--- /dev/null
++++ b/tests/gdimagecolormatch/cve_2019_6977.c
+@@ -0,0 +1,25 @@
++/**
++ * Test for CVE-2019-6977
++ */
++
++#include "gd.h"
++
++int main()
++{
++	gdImagePtr im1;
++	gdImagePtr im2;
++
++	im1 = gdImageCreateTrueColor(0xfff, 0xfff);
++	im2 = gdImageCreate(0xfff, 0xfff);
++	if (gdImageColorAllocate(im2, 0, 0, 0) < 0)
++	{
++		gdImageDestroy(im1);
++		gdImageDestroy(im2);
++		return 1;
++	}
++	gdImageSetPixel(im2, 0, 0, 255);
++	gdImageColorMatch(im1, im2);
++	gdImageDestroy(im1);
++	gdImageDestroy(im2);
++	return 0;
++}
+-- 
+2.24.1
+
+
