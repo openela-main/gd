@@ -9,7 +9,7 @@
 Summary:       A graphics library for quick creation of PNG or JPEG images
 Name:          gd
 Version:       2.2.5
-Release:       7%{?prever}%{?short}%{?dist}
+Release:       8%{?prever}%{?short}%{?dist}
 Group:         System Environment/Libraries
 License:       MIT
 URL:           http://libgd.github.io/
@@ -32,6 +32,8 @@ Patch4:        gd-2.2.5-out-of-bounds-write-on-heap.patch
 Patch5:        gd-2.2.5-potential-double-free.patch
 #  CVE-2018-14553 - https://github.com/fcabralpacheco/libgd/commit/441cbfed60ebf6cb63b8ce120ed0a82b15e7aaf8
 Patch6:	       gd-2.2.5-null-pointer.patch
+# CVE-2026-9672 - https://salsa.debian.org/debian/libgd2/-/commit/c768b24324691d8001d9e98455c9d57b48df2ea9
+Patch7:        gd-2.2.5-CVE-2026-9672.patch
 
 
 BuildRequires: freetype-devel
@@ -101,6 +103,7 @@ files for gd, a graphics library for creating PNG and JPEG graphics.
 %patch4 -p1
 %patch5 -p1
 %patch6 -p1
+%patch7 -p1
 
 : $(perl config/getver.pl)
 
@@ -176,6 +179,11 @@ grep %{version} $RPM_BUILD_ROOT%{_libdir}/pkgconfig/gdlib.pc
 
 
 %changelog
+
+* Mon Sep 14 2026 RHEL Packaging Agent <redhat-ymir-agent@redhat.com> - 2.2.5-8
+- Fix CVE-2026-9672: incorrect array index and uninitialized memory
+  in GIF LZW decoder
+  Resolves: RHEL-259584
 
 * Fri Mar 27 2020 fjanus@redhat.com - 2.2.5-7
 - Fix CVE-2018-14553 - Potential Null pointer dereference in gdImageClone
