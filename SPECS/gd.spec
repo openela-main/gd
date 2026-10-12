@@ -16,7 +16,7 @@
 Summary:       A graphics library for quick creation of PNG or JPEG images
 Name:          gd
 Version:       2.3.2
-Release:       3%{?prever}%{?short}%{?dist}
+Release:       3%{?prever}%{?short}%{?dist}.1
 License:       MIT
 URL:           http://libgd.github.io/
 %if 0%{?commit:1}
@@ -26,6 +26,10 @@ Source0:       libgd-%{version}-%{commit}.tgz
 %else
 Source0:       https://github.com/libgd/libgd/releases/download/gd-%{version}/libgd-%{version}.tar.xz
 %endif
+
+# https://issues.redhat.com/browse/RHEL-259613
+# https://salsa.debian.org/debian/libgd2/-/raw/c768b24324691d8001d9e98455c9d57b48df2ea9/debian/patches/0006-libgd-patch-for-CVE-2026-9672.patch
+Patch0:        gd-2.3.2-CVE-2026-9672.patch
 
 BuildRequires: freetype-devel
 BuildRequires: fontconfig-devel
@@ -110,6 +114,7 @@ files for gd, a graphics library for creating PNG and JPEG graphics.
 
 %prep
 %setup -q -n libgd-%{version}%{?prever:-%{prever}}
+%patch0 -p1
 
 : $(perl config/getver.pl)
 
@@ -185,6 +190,11 @@ grep %{version} $RPM_BUILD_ROOT%{_libdir}/pkgconfig/gdlib.pc
 
 
 %changelog
+* Mon Sep 14 2026 RHEL Packaging Agent <redhat-ymir-agent@redhat.com> - 2.3.2-3.1
+- Fix buffer overflow and use of uninitialized memory in GIF
+  decoding (CVE-2026-9672)
+  Related: RHEL-259613
+
 * Mon Aug 09 2021 Mohan Boddu <mboddu@redhat.com> - 2.3.2-3
 - Rebuilt for IMA sigs, glibc 2.34, aarch64 flags
   Related: rhbz#1991688
