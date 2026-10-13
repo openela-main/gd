@@ -18,7 +18,7 @@
 Summary:       A graphics library for quick creation of PNG or JPEG images
 Name:          gd
 Version:       2.3.3
-Release:       20%{?prever}%{?short}%{?dist}
+Release:       20%{?prever}%{?short}%{?dist}.1
 License:       GD
 URL:           http://libgd.github.io/
 %if 0%{?commit:1}
@@ -33,6 +33,9 @@ Source0:       https://github.com/libgd/libgd/releases/download/gd-%{version}/li
 Patch0:        libgd-flip.patch
 # Missing header see https://github.com/libgd/libgd/pull/766
 Patch1:        libgd-iostream.patch
+# https://issues.redhat.com/browse/RHEL-259570
+# https://github.com/php/php-src/commit/fcd691b377d02285740744bee17c0f298be227d5
+Patch2:        gd-2.3.3-CVE-2026-9672.patch
 
 BuildRequires: freetype-devel
 BuildRequires: fontconfig-devel
@@ -119,6 +122,7 @@ files for gd, a graphics library for creating PNG and JPEG graphics.
 %setup -q -n libgd-%{version}%{?prever:-%{prever}}
 %patch -P0 -p1
 %patch -P1 -p1
+%patch -P2 -p1
 
 : $(perl config/getver.pl)
 
@@ -192,6 +196,10 @@ grep %{version} $RPM_BUILD_ROOT%{_libdir}/pkgconfig/gdlib.pc
 
 
 %changelog
+* Mon Sep 14 2026 RHEL Packaging Agent <redhat-ymir-agent@redhat.com> - 2.3.3-20.1
+- Fix LZW decompression in GIF handling (CVE-2026-9672)
+  (Resolves: RHEL-259570)
+
 * Thu Mar 27 2025 Michal Srb <michal@redhat.com> - 2.3.3-20
 - Rebuild for Konflux (Resolves: RHEL-84822)
 
